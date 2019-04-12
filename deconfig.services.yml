@@ -1,0 +1,7 @@
+services:
+  deconfig.storage.sync:
+    class: Drupal\deconfig\DeconfigStorage
+    decorates: config.storage.sync
+    decoration_priority: 0
+    public: false
+    arguments: ['@deconfig.storage.sync.inner', '@config.storage.active']

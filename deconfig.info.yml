@@ -1,0 +1,5 @@
+name: Deconfig
+description: Developer module for excluding some configuration from import/export.
+type: module
+package: Configuration
+core: 8.x
