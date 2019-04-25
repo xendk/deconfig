@@ -7,10 +7,6 @@ on certain configuration items and let the site administrator change
 the setting without it being overwritten by the configuration
 management system on the next configuration sync.
 
-Deconfig does this by implementing a config.storage.sync storage that
-reads configured configuration from the active store, so they will
-always appear to be up to date.
-
 As a safety measure, it requires the hidden configuration not to be
 present in the config sync storage so it's obvious for developers that
 the given configuration is not enforced. It will throw an error if it
@@ -59,3 +55,8 @@ default_langcode: en
 deconfig'ed configuration from config sync. This is the easy way out
 of `cim`/`cex` throwing errors.
 
+## Implementation details
+
+Deconfig does its magic by implementing a config.storage.sync storage
+that reads deconfig'ed configuration from the active storage rather
+than the sync storage, so they will always appear to be up to date.
