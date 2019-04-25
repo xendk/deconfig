@@ -32,17 +32,18 @@ To deconfig whole file:
 _deconfig: 'Hide this configuration'
 ```
 
-To deconfig site.mail:
+To deconfig site mail and front page in `system.site.yml`:
 
 ``` yaml
 _deconfig:
-  mail: 'Let administrator configure site email'
+  mail: 'Let editor configure site email'
+  page:
+    front: 'Let editor configure frontpage'
 name: 'Le site'
 slogan: 'One site to rule them all'
 page:
   403: ''
   404: ''
-  front: '/frontpage'
 admin_compact_mode: false
 weight_select_max: 100
 langcode: en
