@@ -42,25 +42,5 @@ function deconfig_drush_command() {
  * Callback for deconfig-remove-hidden commond.
  */
 function drush_deconfig_remove_hidden() {
-  $storage = Drupal::service('config.storage.sync');
-  if (!$storage instanceof DeconfigStorage) {
-    drush_set_error('BAD_STORAGE', "config.storage.sync is not Deconfig. Someone's messed with it?");
-    return;
-  }
-
-  // Loop through all config items in all collections and rewrite them (which
-  // removes hidden configuration) if loading failed.
-  $collections = [StorageInterface::DEFAULT_COLLECTION] + $storage->getAllCollectionNames();
-  foreach ($collections as $collection) {
-    $storage = $storage->createCollection($collection);
-    foreach ($storage->listAll() as $name) {
-      try {
-        $storage->read($name);
-      }
-      catch (FoundHiddenConfigurationError $e) {
-        $storage->write($name, $storage->readRaw($name));
-        drush_log('Removed hidden configuration from "' . $name . '"', LogLevel::OK);
-      }
-    }
-  }
+  \Drupal::service('deconfig.commands')->deconfigRemoveHidden();
 }
