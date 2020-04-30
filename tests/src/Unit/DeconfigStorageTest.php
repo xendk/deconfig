@@ -86,6 +86,29 @@ class DeconfigStorageTest extends UnitTestCase {
           'sub' => 'banana',
         ],
       ],
+      // When using @, the storage should be used when active storage doesn't
+      // have anything.
+      [
+        ['@_deconfig' => 'Hidden', 'the_key' => 'value'],
+        ['@_deconfig' => 'Hidden'],
+        ['@_deconfig' => 'Hidden', 'the_key' => 'value'],
+      ],
+      [
+        ['_deconfig' => ['@sub' => ['the_key' => 'hide']], 'sub' => ['the_key' => 'value']],
+        ['_deconfig' => ['@sub' => ['the_key' => 'hide']]],
+        ['_deconfig' => ['@sub' => ['the_key' => 'hide']], 'sub' => ['the_key' => 'value']],
+      ],
+      // When using @, the active storage should override the storage.
+      [
+        ['@_deconfig' => 'Hidden', 'the_key' => 'value'],
+        ['@_deconfig' => 'Hidden', 'the_key' => 'another_value'],
+        ['@_deconfig' => 'Hidden', 'the_key' => 'another_value'],
+      ],
+      [
+        ['_deconfig' => ['@sub' => ['the_key' => 'hide']], 'sub' => ['the_key' => 'value']],
+        ['_deconfig' => ['@sub' => ['the_key' => 'hide']], 'sub' => ['the_key' => 'another_value']],
+        ['_deconfig' => ['@sub' => ['the_key' => 'hide']], 'sub' => ['the_key' => 'another_value']],
+      ],
     ];
   }
 
@@ -94,9 +117,11 @@ class DeconfigStorageTest extends UnitTestCase {
    *
    * @dataProvider writeProvider
    */
-  public function testWriting($writtenData, $expected) {
+  public function testWriting($storageData, $writtenData, $expected) {
     $storage = $this->prophesize(StorageInterface::class);
     $active = $this->prophesize(StorageInterface::class);
+
+    $storage->read('test.key')->willReturn($storageData);
 
     $storage->write('test.key', $expected)->willReturn(TRUE)->shouldBeCalled();
 
@@ -112,8 +137,17 @@ class DeconfigStorageTest extends UnitTestCase {
       [
         ['simple data' => 'beta'],
         ['simple data' => 'beta'],
+        ['simple data' => 'beta'],
       ],
       [
+        [
+          '_deconfig' => ['key' => ['something' => 'hidden']],
+          'key' => [
+            'other' => 'should be overwritten',
+          ],
+          'and' => 'should be overwritten',
+          'added' => 'here',
+        ],
         [
           '_deconfig' => ['key' => ['something' => 'hidden']],
           'key' => [
@@ -126,6 +160,37 @@ class DeconfigStorageTest extends UnitTestCase {
         [
           '_deconfig' => ['key' => ['something' => 'hidden']],
           'key' => [
+            'other' => 'not hidden',
+          ],
+          'and' => 'not hidden',
+          'added' => 'here',
+        ],
+      ],
+      // When using @, the value in the store should be used instead of the
+      // value from active store.
+      [
+        [
+          '_deconfig' => ['key' => ['@something' => 'hidden']],
+          'key' => [
+            'something' => 'should not change',
+            'other' => 'should be overwritten',
+          ],
+          'and' => 'should be overwritten',
+          'added' => 'here',
+        ],
+        [
+          '_deconfig' => ['key' => ['@something' => 'hidden']],
+          'key' => [
+            'something' => 'this shouldnt be saved',
+            'other' => 'not hidden',
+          ],
+          'and' => 'not hidden',
+          'added' => 'here',
+        ],
+        [
+          '_deconfig' => ['key' => ['@something' => 'hidden']],
+          'key' => [
+            'something' => 'should not change',
             'other' => 'not hidden',
           ],
           'and' => 'not hidden',
@@ -192,6 +257,17 @@ class DeconfigStorageTest extends UnitTestCase {
         ],
         FALSE,
       ],
+      // But not for @ keys.
+      [
+        [
+          '_deconfig' => ['@sub' => ['key' => 'ignore this']],
+          'something' => 'lala',
+          'sub' => [
+            'key' => 'banana',
+          ],
+        ],
+        FALSE,
+      ],
     ];
   }
 
@@ -231,7 +307,7 @@ class DeconfigStorageTest extends UnitTestCase {
         // Returned from storage. Raw reading shouldn't care that hidden items
         // are in the storage.
         [
-          '_deconfig' => ['sub' => ['another' => ['hidden' => 'this is hidden']]],
+          '_deconfig' => ['sub' => ['@another' => ['hidden' => 'this is hidden']]],
           'sub' => [
             'another' => [
               'hidden' => TRUE,
@@ -241,7 +317,7 @@ class DeconfigStorageTest extends UnitTestCase {
         ],
         // Returned from active storage.
         [
-          '_deconfig' => ['sub' => ['another' => ['hidden' => 'this is hidden']]],
+          '_deconfig' => ['sub' => ['@another' => ['hidden' => 'this is hidden']]],
           'nothidden' => 'should not happen',
           'sub' => [
             'another' => [
@@ -251,7 +327,7 @@ class DeconfigStorageTest extends UnitTestCase {
         ],
         // Expected result.
         [
-          '_deconfig' => ['sub' => ['another' => ['hidden' => 'this is hidden']]],
+          '_deconfig' => ['sub' => ['@another' => ['hidden' => 'this is hidden']]],
           'nothidden' => 'not hidden',
           'sub' => [
             'another' => [
