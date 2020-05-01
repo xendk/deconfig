@@ -56,13 +56,8 @@ class DeconfigStorage implements StorageInterface {
   protected function doHide($hideSpec, $data, $storageData, $lax) {
     if (is_array($hideSpec)) {
       foreach ($hideSpec as $key => $spec) {
-        if ($key[0] === '@') {
-          $realKey = substr($key, 1);
-          $lax = TRUE;
-        }
-        else {
-          $realKey = $key;
-        }
+        list($realKey, $keyLax) = $this->hideKey($key);
+        $lax = $lax || $keyLax;
 
         if (isset($data[$realKey])) {
           if (is_array($data[$realKey])) {
@@ -116,13 +111,8 @@ class DeconfigStorage implements StorageInterface {
   protected function doUnhide($hideSpec, $data, $activeData, $throw = FALSE, $lax = FALSE) {
     if (is_array($hideSpec)) {
       foreach ($hideSpec as $key => $spec) {
-        if ($key[0] === '@') {
-          $realKey = substr($key, 1);
-          $lax = TRUE;
-        }
-        else {
-          $realKey = $key;
-        }
+        list($realKey, $keyLax) = $this->hideKey($key);
+        $lax = $lax || $keyLax;
 
         // If this is the item that's supposed be hidden ($spec is not an
         // array), but it's set, throw an error.
@@ -163,6 +153,18 @@ class DeconfigStorage implements StorageInterface {
     }
 
     return $data;
+  }
+
+  protected function hideKey($hideKey) {
+    $key = $hideKey;
+    $lax = FALSE;
+
+    if ($hideKey[0] === '@') {
+      $key = substr($hideKey, 1);
+      $lax = TRUE;
+    }
+
+    return [$key, $lax];
   }
 
   /**
