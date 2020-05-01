@@ -50,6 +50,28 @@ langcode: en
 default_langcode: en
 ```
 
+### Soft deconfig
+
+In some instances a configuration cannot be completely removed from
+configuration, either because something requires the item to be
+present (site.name, for instance, is required to be present in the
+exported configuration in order to install a site from configuration),
+or because it needs a default value to work.
+
+In these cases deconfig support a "soft" deconfig mode which allows
+the setting to be present, but only used when there's no value in the
+active configuration. The default values wont get overwritten when
+exporting the configuration.
+
+Simply add a @ to the key of the item (remember to quote the name.):
+
+``` yaml
+_deconfig:
+  '@name': 'Let administrator configure site name'
+name: 'Default site name'
+...
+```
+
 ## Drush commands
 
 `drush deconfig-remove-hidden`: Clean up command that'll remove any
