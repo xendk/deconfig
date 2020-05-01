@@ -166,26 +166,46 @@ class DeconfigStorage implements StorageInterface {
   }
 
   /**
-   * Read configuration item without error checking.
+   * Split up configuration and deconfig data.
    */
-  public function readRaw($name) {
-    $data = $this->storage->read($name);
-
+  protected function explode($data) {
     $hideSpec = NULL;
     $lax = FALSE;
 
     if (isset($data[self::KEY])) {
       $hideSpec = $data[self::KEY];
+      unset($data[self::KEY]);
     }
     elseif (isset($data['@' . self::KEY])) {
       $hideSpec = $data['@' . self::KEY];
+      unset($data['@' . self::KEY]);
       $lax = TRUE;
     }
+
+    return [$hideSpec, $data, $lax];
+  }
+
+  /**
+   * Join configuration and deconfig data.
+   */
+  protected function implode($hideSpec, $data, $lax) {
+    if ($hideSpec) {
+      $data[($lax ? '@' : '') . self::KEY] = $hideSpec;
+    }
+
+    return $data;
+  }
+
+  /**
+   * Read configuration item without error checking.
+   */
+  public function readRaw($name) {
+    list($hideSpec, $data, $lax) = $this->explode($this->storage->read($name));
 
     if ($hideSpec) {
       $activeData = $this->activeStorage->read($name);
       $data = $this->doUnhide($hideSpec, $data, $activeData, FALSE, $lax);
-      $data[($lax ? '@' : '') . self::KEY] = $hideSpec;
+      $data = $this->implode($hideSpec, $data, $lax);
     }
 
     return $data;
@@ -202,23 +222,12 @@ class DeconfigStorage implements StorageInterface {
    * {@inheritdoc}
    */
   public function read($name) {
-    $data = $this->storage->read($name);
-
-    $hideSpec = NULL;
-    $lax = FALSE;
-
-    if (isset($data[self::KEY])) {
-      $hideSpec = $data[self::KEY];
-    }
-    elseif (isset($data['@' . self::KEY])) {
-      $hideSpec = $data['@' . self::KEY];
-      $lax = TRUE;
-    }
+    list($hideSpec, $data, $lax) = $this->explode($this->storage->read($name));
 
     if ($hideSpec) {
       $activeData = $this->activeStorage->read($name);
       $data = $this->doUnhide($hideSpec, $data, $activeData, TRUE, $lax);
-      $data[($lax ? '@' : '') . self::KEY] = $hideSpec;
+      $data = $this->implode($hideSpec, $data, $lax);
     }
 
     return $data;
@@ -241,22 +250,13 @@ class DeconfigStorage implements StorageInterface {
    * {@inheritdoc}
    */
   public function write($name, array $data) {
-    $hideSpec = NULL;
-    $lax = FALSE;
-
-    if (isset($data[self::KEY])) {
-      $hideSpec = $data[self::KEY];
-    }
-    elseif (isset($data['@' . self::KEY])) {
-      $hideSpec = $data['@' . self::KEY];
-      $lax = TRUE;
-    }
+    list($hideSpec, $data, $lax) = $this->explode($data);
 
     if ($hideSpec) {
       $storageData = $this->storage->read($name);
 
       $data = $this->doHide($hideSpec, $data, $storageData, $lax);
-      $data[($lax ? '@' : '') . self::KEY] = $hideSpec;
+      $data = $this->implode($hideSpec, $data, $lax);
     }
 
     return $this->storage->write($name, $data);
