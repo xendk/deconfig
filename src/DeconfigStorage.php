@@ -85,7 +85,7 @@ class DeconfigStorage implements StorageInterface {
       }
     }
     else {
-      return NULL;
+      return [];
     }
 
     return $data;
@@ -149,7 +149,7 @@ class DeconfigStorage implements StorageInterface {
         return $data;
       }
 
-      return $activeData;
+      return $activeData ?: [];
     }
 
     return $data;
@@ -171,7 +171,7 @@ class DeconfigStorage implements StorageInterface {
    * Split up configuration and deconfig data.
    */
   protected function explode($data) {
-    $hideSpec = NULL;
+    $hideSpec = [];
     $lax = FALSE;
 
     if (isset($data[self::KEY])) {
@@ -192,7 +192,7 @@ class DeconfigStorage implements StorageInterface {
    */
   protected function implode($hideSpec, $data, $lax) {
     if ($hideSpec) {
-      $data[($lax ? '@' : '') . self::KEY] = $hideSpec;
+      $data = [($lax ? '@' : '') . self::KEY => $hideSpec] + $data;
     }
 
     return $data;

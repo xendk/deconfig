@@ -45,6 +45,11 @@ class DeconfigStorageTest extends UnitTestCase {
         ['_deconfig' => 'Hidden', 'hidden' => TRUE],
       ],
       [
+        ['_deconfig' => 'Hidden'],
+        ['_deconfig' => 'Hidden'],
+        ['_deconfig' => 'Hidden'],
+      ],
+      [
         // Returned from storage.
         [
           '_deconfig' => ['sub' => ['another' => ['hidden' => 'this is hidden']]],
