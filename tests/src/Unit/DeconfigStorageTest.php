@@ -417,6 +417,32 @@ class DeconfigStorageTest extends UnitTestCase {
           'added' => 'here',
         ],
       ],
+      // Check that @ doesn't bleed over from one sub-key to the next. This is a
+      // regression test.
+      [
+        [
+          '_deconfig' => ['@first' => 'hidden', 'sub' => ['key' => 'hidden']],
+          'first' => 'soft hidden',
+          'sub' => [
+            'another' => 'not hidden',
+          ],
+        ],
+        [
+          '_deconfig' => ['@first' => 'hidden', 'sub' => ['key' => 'hidden']],
+          'first' => 'will be hidden',
+          'sub' => [
+            'key' => 'hidden',
+            'another' => 'not hidden',
+          ],
+        ],
+        [
+          '_deconfig' => ['@first' => 'hidden', 'sub' => ['key' => 'hidden']],
+          'first' => 'soft hidden',
+          'sub' => [
+            'another' => 'not hidden',
+          ],
+        ],
+      ],
       [
         [
           '_deconfig' => ['key' => ['@something' => 'hidden']],

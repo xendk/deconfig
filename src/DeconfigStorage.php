@@ -64,23 +64,21 @@ class DeconfigStorage implements StorageInterface {
     if (is_array($hideSpec)) {
       foreach ($hideSpec as $key => $spec) {
         list($realKey, $keyLax) = $this->hideKey($key);
-        $lax = $lax || $keyLax;
+        $keyLax = $lax || $keyLax;
 
         if (isset($data[$realKey])) {
           if (is_array($data[$realKey])) {
             // Handle recursive hiding.
-            $data[$key] = $this->doHide($hideSpec[$key], $data[$realKey], $storageData[$realKey], $lax);
+            $data[$key] = $this->doHide($hideSpec[$key], $data[$realKey], $storageData[$realKey], $keyLax);
             // Delete key if it's become empty.
             if (empty($data[$realKey])) {
               unset($data[$realKey]);
             }
           }
           else {
-            // $data[$realKey] is not an array, thus there cannot be any sub
-            // keys we need to hide, only delete it if it's the item we want to
-            // hide or else we'd delete random parents.
+            // If the spec isn't an array, we're at the item we need to hide.
             if (!is_array($spec)) {
-              if ($lax) {
+              if ($keyLax && isset($storageData[$realKey])) {
                 $data[$realKey] = $storageData[$realKey];
               }
               else {
