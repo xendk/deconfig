@@ -144,6 +144,19 @@ class DeconfigStorageTest extends UnitTestCase {
         ['simple data' => 'beta'],
         ['simple data' => 'beta'],
       ],
+      // Hiding should remove parents if they end up empty.
+      [
+        [
+          '_deconfig' => ['sub' => ['key' => 'hidden']],
+        ],
+        [
+          '_deconfig' => ['sub' => ['key' => 'hidden']],
+          'sub' => ['key' => 'hidden'],
+        ],
+        [
+          '_deconfig' => ['sub' => ['key' => 'hidden']],
+        ],
+      ],
       [
         [
           '_deconfig' => ['key' => ['something' => 'hidden']],
@@ -339,6 +352,115 @@ class DeconfigStorageTest extends UnitTestCase {
               'hidden' => TRUE,
             ],
           ],
+        ],
+      ],
+    ];
+  }
+
+  /**
+   * Test that deleted data is cached.
+   *
+   * @dataProvider cacheDeletedProvider
+   */
+  public function testCachingDeletedConfig($preDeleteData, $writtenData, $expected) {
+    $storage = $this->prophesize(StorageInterface::class);
+    $active = $this->prophesize(StorageInterface::class);
+
+    $storage->read('test.key')->willReturn($preDeleteData);
+    $storage->delete('test.key')->will(function () {
+      $this->read('test.key')->willReturn([]);
+    });
+
+    $storage->write('test.key', $expected)->willReturn(TRUE)->shouldBeCalled();
+
+    $deconfig = new DeconfigStorage($storage->reveal(), $active->reveal());
+
+    // Simulate `drush cex` deleting all configuration in preparation for
+    // exporting everything. Technically it's deleteAll() which calls delete()
+    // in turn.
+    $deconfig->delete('test.key');
+
+    // Not checking the return value. If it doesn't call the expected write
+    // above, the stub will return null, which would cause a failure here that
+    // would shadow the error from the stub.
+    $deconfig->write('test.key', $writtenData);
+  }
+
+  /**
+   * Data provider for testCachingDeletedConfig.
+   */
+  public function cacheDeletedProvider() {
+    return [
+      [
+        [
+          'key' => [
+            'something' => 'everything should be overridden here',
+            'other' => 'should be overwritten',
+          ],
+          'and' => 'should be overwritten',
+          'added' => 'here',
+        ],
+        [
+          'key' => [
+            'something' => 'this shouldnt be saved',
+            'other' => 'not hidden',
+          ],
+          'and' => 'not hidden',
+          'added' => 'here',
+        ],
+        [
+          'key' => [
+            'something' => 'this shouldnt be saved',
+            'other' => 'not hidden',
+          ],
+          'and' => 'not hidden',
+          'added' => 'here',
+        ],
+      ],
+      [
+        [
+          '_deconfig' => ['key' => ['@something' => 'hidden']],
+          'key' => [
+            'something' => 'should not change',
+            'other' => 'should be overwritten',
+          ],
+          'and' => 'should be overwritten',
+          'added' => 'here',
+        ],
+        [
+          '_deconfig' => ['key' => ['@something' => 'hidden']],
+          'key' => [
+            'something' => 'this shouldnt be saved',
+            'other' => 'not hidden',
+          ],
+          'and' => 'not hidden',
+          'added' => 'here',
+        ],
+        [
+          '_deconfig' => ['key' => ['@something' => 'hidden']],
+          'key' => [
+            'something' => 'should not change',
+            'other' => 'not hidden',
+          ],
+          'and' => 'not hidden',
+          'added' => 'here',
+        ],
+      ],
+      [
+        [
+          '_deconfig' => ['key' => ['something' => 'hidden']],
+          'and' => 'should be overwritten',
+        ],
+        [
+          '_deconfig' => ['key' => ['something' => 'hidden']],
+          'key' => [
+            'something' => 'this shouldnt be saved',
+          ],
+          'and' => 'not hidden',
+        ],
+        [
+          '_deconfig' => ['key' => ['something' => 'hidden']],
+          'and' => 'not hidden',
         ],
       ],
     ];

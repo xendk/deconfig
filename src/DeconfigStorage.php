@@ -26,6 +26,13 @@ class DeconfigStorage implements StorageInterface {
   protected $activeStorage;
 
   /**
+   * Deleted data.
+   *
+   * @var array
+   */
+  protected $deleted = [];
+
+  /**
    * Construct new DeconfigStorage.
    *
    * @param \Drupal\Core\Config\StorageInterface $wrappedStorage
@@ -255,7 +262,8 @@ class DeconfigStorage implements StorageInterface {
     list($hideSpec, $data, $lax) = $this->explode($data);
 
     if ($hideSpec) {
-      $storageData = $this->storage->read($name);
+      $storageData = isset($this->deleted[$name]) ? $this->deleted[$name] : $this->storage->read($name);
+      unset($this->deleted[$name]);
 
       $data = $this->doHide($hideSpec, $data, $storageData, $lax);
       $data = $this->implode($hideSpec, $data, $lax);
@@ -268,6 +276,14 @@ class DeconfigStorage implements StorageInterface {
    * {@inheritdoc}
    */
   public function delete($name) {
+    // In case this is a delete in preparation for doing a new export, we need
+    // to save the previous values in case there's @'ed values.
+    list($hideSpec, $data, $lax) = $this->explode($this->storage->read($name));
+
+    if ($hideSpec) {
+      $this->deleted[$name] = $data;
+    }
+
     return $this->storage->delete($name);
   }
 
@@ -303,7 +319,20 @@ class DeconfigStorage implements StorageInterface {
    * {@inheritdoc}
    */
   public function deleteAll($prefix = '') {
-    return $this->storage->deleteAll($prefix);
+    $files = $this->listAll($prefix);
+    $success = !empty($files);
+    foreach ($files as $name) {
+      if (!$this->delete($name) && $success) {
+        $success = FALSE;
+      }
+    }
+    if ($success && $this->collection != StorageInterface::DEFAULT_COLLECTION) {
+      // Remove empty directories.
+      if (!(new \FilesystemIterator($this->getCollectionDirectory()))->valid()) {
+        $this->getFileSystem()->rmdir($this->getCollectionDirectory());
+      }
+    }
+    return $success;
   }
 
   /**
