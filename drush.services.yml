@@ -1,0 +1,6 @@
+services:
+  deconfig.commands:
+    class: \Drupal\deconfig\Commands\DeconfigCommands
+    arguments: ['@config.storage.sync']
+    tags:
+      - { name: drush.command }
